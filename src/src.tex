@@ -1,0 +1,105 @@
+\section{Описание}
+Основная идея сортировки подсчетом заключается в том, чтобы для каждого входного 
+элемента $x$ определить количество элементов, которые меньше $x$ \cite{Kormen}.
+
+Алгоритм сортировки подсчётом выглядит следующим образом:
+\begin{enumerate}
+    \item Найти максимальный и минимальный элементы $max$ и $min$ в массиве $data$.
+    \item Создать массив $count$ размером $max - min + 1$ и заполнить его нулями.
+    \item Посчитать количество вхождений каждого элемента в исходном массиве $data$.
+    \item Вычислить префиксные суммы в массиве $count$.
+    \item Создать выходной отсортированный массив $sortedData$, заполнив его с использованием информации из массива $count$ о позициях элементов.
+\end{enumerate}
+
+\pagebreak
+
+\section{Исходный код}
+Исходный код реализует сортировку подсчётом для пар \enquote{ключ-значение}, где ключ и значение представляют собой целые числа. Программа считывает входные данные построчно, разделяя ключ и значение по символу табуляции. Затем определяются максимальный и минимальный ключи, которые используются для создания массива count размером $max - min + 1$. После этого программа подсчитывает количество вхождений каждого ключа в массиве count, вычисляет префиксные суммы и создает выходной отсортированный массив sortedData. Наконец, программа выводит отсортированные пары ключ-значение.
+\begin{lstlisting}[language=C++]
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <utility>
+#include <cstdio>
+#include <ctime>
+const int MAX = 65536;
+
+void countSort(std::vector<std::pair<unsigned short, unsigned long long>> &data) {
+    if (data.empty()) return;
+
+    unsigned short minKey = std::min_element(data.begin(), data.end(),
+        [](const auto &a, const auto &b){ return a.first < b.first; })->first;
+    unsigned short maxKey = std::max_element(data.begin(), data.end(),
+        [](const auto &a, const auto &b){ return a.first < b.first; })->first;
+
+    std::vector<unsigned int> counts(maxKey - minKey + 1, 0);
+
+    for (const auto &elem : data) {
+        counts[elem.first - minKey]++;
+    }
+
+    for (size_t i = 1; i < counts.size(); i++) {
+        counts[i] += counts[i - 1];
+    }
+
+    std::vector<std::pair<unsigned short, unsigned long long>> sortedData(data.size());
+    for (int i = data.size() - 1; i >= 0; i--) {
+        sortedData[counts[data[i].first - minKey] - 1] = data[i];
+        counts[data[i].first - minKey]--;
+    }
+
+    data = std::move(sortedData);
+}
+
+int main(int argc, char *argv[]) {
+    std::vector<std::pair<unsigned short, unsigned long long>> data;
+    FILE *inFile = fopen(argv[1], "r");
+    unsigned short first;
+    unsigned long long second;
+    while (fscanf(inFile, "%hu\t%llu", &first, &second) == 2) {
+        data.push_back(std::make_pair(first, second));
+    }
+    fclose(inFile);
+    
+    clock_t start = clock();
+    
+    countSort(data);
+
+    clock_t end = clock();
+    double elapsed = double(end - start) / CLOCKS_PER_SEC;
+
+    std::cout << "Elapsed time: " << elapsed << " seconds" << std::endl;
+
+    FILE *outFile = fopen(argv[2], "w");
+    for (size_t i = 0; i < data.size(); i++) {
+        fprintf(outFile, "%hu\t%llu\n", data[i].first, data[i].second);
+    }
+    fclose(outFile);
+
+    
+    return 0;
+}
+	
+\end{lstlisting}
+
+\pagebreak
+
+\section{Консоль}
+\begin{alltt}
+g++ -o build/main main.cpp
+./build/main input.txt output.txt
+
+[input.txt]
+0	13207862122685464576
+65535	7670388314707853312
+0	4588010303972900864
+65535	12992997081104908288
+
+[output.txt]
+0	13207862122685464576
+0	4588010303972900864
+65535	7670388314707853312
+65535	12992997081104908288
+\end{alltt}
+\pagebreak
+
